@@ -7,7 +7,7 @@ local visualHelp = false
 local visualHelpEnt
 local entityToSpawn = util.joaat("prop_mk_sphere")
 local blackHole = false
-local blackHoleType = "black"
+local blackHoleType = "pull"
 local blackHoleVehicle
 local blackHolePos = {x = 0, y = 0, z = 0}
 local vehiclePos = {x = 0, y = 0, z = 0}
@@ -30,9 +30,9 @@ end)
 local blackHoleTypeMenu = menu.list_select(root, "Black hole type ", {}, "Choose if you want it to pull (blackhole) or push (whitehole) vehicles arround", tableBlackHole, 1, function(a)
     a -= 1
     if a == 0 then
-        blackHoleType = "black"
+        blackHoleType = "pull"
     elseif a == 1 then
-        blackHoleType = "white"
+        blackHoleType = "push"
     end
 end)
 
@@ -99,7 +99,7 @@ util.create_tick_handler(function()
                     NETWORK.NETWORK_REQUEST_CONTROL_OF_ENTITY(value)
                 end
 
-                if blackHoleType == "black" then
+                if blackHoleType == "pull" then
                     -- still dont know how I got the idea to make it
                     -- but it work maybe not that good but it's good enough for me
                     -- should use trigo to get the angle then calculate the force for x,y,z but it might make it laggier..
@@ -120,7 +120,7 @@ util.create_tick_handler(function()
                         pushToZ = -pushStrength
                     end
                     ENTITY.APPLY_FORCE_TO_ENTITY(value, 1, pushToX, pushToY, pushToZ, 0, 0, 0, 0, false, true, true, false)
-                elseif blackHoleType == "white" then
+                elseif blackHoleType == "push" then
                     if blackHolePos.x > vehiclePos.x then
                         pushToX = -pushStrength
                     elseif blackHolePos.x < vehiclePos.x then

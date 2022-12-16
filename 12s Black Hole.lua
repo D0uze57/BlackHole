@@ -1,3 +1,34 @@
+-- 0.1
+
+-- Auto Updater from https://github.com/hexarobi/stand-lua-auto-updater
+local status, auto_updater = pcall(require, "auto-updater")
+if not status then
+    local auto_update_complete = nil util.toast("Installing auto-updater...", TOAST_ALL)
+    async_http.init("raw.githubusercontent.com", "/hexarobi/stand-lua-auto-updater/main/auto-updater.lua",
+        function(result, headers, status_code)
+            local function parse_auto_update_result(result, headers, status_code)
+                local error_prefix = "Error downloading auto-updater: "
+                if status_code ~= 200 then util.toast(error_prefix..status_code, TOAST_ALL) return false end
+                if not result or result == "" then util.toast(error_prefix.."Found empty file.", TOAST_ALL) return false end
+                filesystem.mkdir(filesystem.scripts_dir() .. "lib")
+                local file = io.open(filesystem.scripts_dir() .. "lib\\auto-updater.lua", "wb")
+                if file == nil then util.toast(error_prefix.."Could not open file for writing.", TOAST_ALL) return false end
+                file:write(result) file:close() util.toast("Successfully installed auto-updater lib", TOAST_ALL) return true
+            end
+            auto_update_complete = parse_auto_update_result(result, headers, status_code)
+        end, function() util.toast("Error downloading auto-updater lib. Update failed to download.", TOAST_ALL) end)
+    async_http.dispatch() local i = 1 while (auto_update_complete == nil and i < 40) do util.yield(250) i = i + 1 end
+    if auto_update_complete == nil then error("Error downloading auto-updater lib. HTTP Request timeout") end
+    auto_updater = require("auto-updater")
+end
+if auto_updater == true then error("Invalid auto-updater lib. Please delete your Stand/Lua Scripts/lib/auto-updater.lua and try again") end
+
+auto_updater.run_auto_update({
+    source_url="https://raw.githubusercontent.com/D0uze57/BlackHole/main/12s%20Black%20Hole.lua",
+    script_relpath=SCRIPT_RELPATH,
+    verify_file_begins_with="--"
+})
+
 util.keep_running()
 util.require_natives(1663599433)
 local root = menu.my_root()
@@ -23,8 +54,8 @@ local blackHoleMenu = menu.toggle(root, "Black hole toggle", {}, "", function(a)
 end)
 
 -- toggle if the visualHelp is visible at the center of the blackHole
-local visualHelpMenu = menu.toggle(root, "Visual help", {}, "spawn an entity at the center of the blackhole (doesn't have colision)", function(a)
-    visualHelp = a
+local visualHelpMenu = menu.toggle_loop(root, "Visual help", {}, "spawn an entity at the center of the blackhole (doesn't have colision)", function(a)
+    GRAPHICS.DRAW_MARKER_SPHERE(blackHolePos.x, blackHolePos.y, blackHolePos.z, 2, 0, 0, 0, 0.8)
 end)
 
 local blackHoleTypeMenu = menu.list_select(root, "Black hole type ", {}, "Choose if you want it to pull (blackhole) or push (whitehole) vehicles arround", tableBlackHole, 1, function(a)
@@ -63,25 +94,6 @@ menu.action(root, "Set blackhole position here", {}, "Set the position of the bl
     blackHolePosY.value = math.floor(blackHolePos.y)
     blackHolePosZ.value = math.floor(blackHolePos.z)
 end)
-
-
--- check if entity to for visualHelp exist if not make one
--- also place the visualHelp at the center of the blackHole
-util.create_tick_handler(function()
-    if ENTITY.DOES_ENTITY_EXIST(visualHelpEnt) then
-        if visualHelp == true then
-            ENTITY.SET_ENTITY_COORDS(visualHelpEnt, blackHolePos.x, blackHolePos.y, blackHolePos.z, false, false, false, false)
-        elseif visualHelp == false then
-            ENTITY.SET_ENTITY_COORDS(visualHelpEnt, 0, 0, 0, false, false, false, false)
-        end
-    else
-        visualHelpEnt = entities.create_object(entityToSpawn, blackHolePos)
-        ENTITY.FREEZE_ENTITY_POSITION(visualHelpEnt, true)
-        ENTITY.SET_ENTITY_COLLISION(visualHelpEnt, true, false)
-    end
-    util.yield(100)
-end)
-
 
 -- Could make an entity ignore filter
 -- but I'm too lazy to do it
